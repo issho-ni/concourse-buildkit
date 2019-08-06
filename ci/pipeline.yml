@@ -1,4 +1,10 @@
 ---
+resource_types:
+  - name: concourse-pipeline
+    type: registry-image
+    source:
+      repository: concourse/concourse-pipeline-resource
+
 resources:
   - name: git
     type: git
@@ -20,8 +26,41 @@ resources:
       repository: issho/concourse-buildkit
       username: ((docker-hub.username))
       password: ((docker-hub.password))
+  - name: pipeline-git
+    type: git
+    icon: github-circle
+    source:
+      uri: https://github.com/issho-ni/concourse-buildkit
+      paths:
+        - ci/
+  - name: pipeline
+    type: concourse-pipeline
+    icon: fan
+    source:
+      teams:
+        - name: main
+          username: ((concourse.username))
+          password: ((concourse.password))
+
+groups:
+  - name: build
+    jobs:
+      - build-image
+  - name: pipeline
+    jobs:
+      - pipeline
 
 jobs:
+  - name: pipeline
+    plan:
+      - get: pipeline-git
+        trigger: true
+      - put: pipeline
+        params:
+          pipelines:
+            - name: concourse-buildkit
+              team: main
+              config_file: pipeline-git/ci/pipeline.yml
   - name: build-image
     plan:
       - in_parallel:
@@ -29,9 +68,7 @@ jobs:
             trigger: true
           - get: buildkit
             trigger: true
-          - get: concourse-buildkit
       - task: build
-        image: concourse-buildkit
         file: git/ci/tasks/build.yml
         privileged: true
         output_mapping:

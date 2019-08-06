@@ -1,5 +1,7 @@
 # concourse-buildkit
 
+[![Build Status](https://ci.issho-ni.co/api/v1/teams/main/pipelines/concourse-buildkit/badge)](https://ci.issho-ni.co/main/pipelines/concourse-buildkit)
+
 Use [BuildKit][] to build OCI-compliant tarballs in Concourse, with support
 for exporting and importing build caches as Concourse inputs, outputs, and
 caches.
