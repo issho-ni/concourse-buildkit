@@ -1,0 +1,91 @@
+#!/usr/bin/env sh
+
+set -eu
+
+BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ", $0}')
+BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
+BUILDCTL_OPTS=${BUILDCTL_OPTS:-}
+CACHE_LOCAL_MODE=${CACHE_LOCAL_MODE:-min}
+CACHE_REGISTRY_REF=${CACHE_REGISTRY_REF:-}
+CONTEXT=${CONTEXT:-.}
+DOCKERFILE=${DOCKERFILE:-$CONTEXT}
+OUTPUT_TYPE=${OUTPUT_TYPE:-docker}
+REPOSITORY=${REPOSITORY:-}
+TAG=${TAG:-latest}
+TAG_FILE=${TAG_FILE:-}
+TARGET=${TARGET:-}
+TARGET_FILE=${TARGET_FILE:-}
+
+BUILDCTL_OPTS="${BUILDCTL_OPTS} --frontend dockerfile.v0"
+BUILDCTL_OPTS="${BUILDCTL_OPTS} --local context=${CONTEXT}"
+BUILDCTL_OPTS="${BUILDCTL_OPTS} --local dockerfile=${DOCKERFILE}"
+
+if [ -d cache ]; then
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_LOCAL_MODE},dest=cache"
+elif [ -n "$CACHE_REGISTRY_REF" ]; then
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,ref=${CACHE_REGISTRY_REF}"
+fi
+
+if [ -f cache/index.json ]; then
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=cache"
+elif [ -n "$CACHE_REGISTRY_REF" ]; then
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=registry,ref=${CACHE_REGISTRY_REF}"
+fi
+
+if [ -n "$TARGET_FILE" ]; then
+    if [ ! -f "$TARGET_FILE" ]; then
+        echo "target file '$TARGET_FILE' does not exist!"
+        exit 1
+    fi
+
+    TARGET=$(cat $TARGET_FILE)
+fi
+
+if [ -n "$TARGET" ]; then
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --opt target=${TARGET}"
+fi
+
+if [ -n "$BUILD_ARGS_FILE" ]; then
+    if [ ! -f "$BUILD_ARGS_FILE" ]; then
+        echo "build args file '$BUILD_ARGS_FILE' does not exist!"
+        exit 1
+    fi
+
+    while read -r line; do
+        if [ -n "$line" ]; then
+            $BUILD_ARGS_OPT="${BUILD_ARGS_OPT} --build-arg ${line}"
+        fi
+    done < $BUILD_ARGS_FILE
+fi
+
+BUILDCTL_OPTS="${BUILDCTL_OPTS} ${BUILD_ARGS_OPT}"
+
+redirect="/dev/null"
+
+if [ "$OUTPUT_TYPE" != "none" ]; then
+    if [ ! -n "$REPOSITORY" ]; then
+        echo "required parameter \$REPOSITORY is missing!"
+        exit 1
+    fi
+
+    if [ -n "$TAG_FILE" ]; then
+        if [ ! -f "$TAG_FILE" ]; then
+            echo "tag file '$TAG_FILE' does not exist!"
+            exit 1
+        fi
+
+        TAG=$(cat $TAG_FILE)
+    fi
+
+    if [ -n "$TAG" ]; then
+        REPOSITORY="${REPOSITORY}:${TAG}"
+    fi
+
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --output type=${OUTPUT_TYPE},name=${REPOSITORY}"
+
+    if [ -d image ]; then
+        redirect="image/image.tar"
+    fi
+fi
+
+exec buildctl-daemonless.sh build ${BUILDCTL_OPTS} > ${redirect}

@@ -1,0 +1,42 @@
+---
+resources:
+  - name: git
+    type: git
+    icon: github-circle
+    source:
+      uri: https://github.com/issho-ni/concourse-buildkit
+      ignore_paths:
+        - ci/
+  - name: buildkit
+    type: registry-image
+    icon: docker
+    source:
+      repository: moby/buildkit
+      tag: v0.6.0
+  - name: concourse-buildkit
+    type: registry-image
+    icon: docker
+    source:
+      repository: issho/concourse-buildkit
+      username: ((docker-hub.username))
+      password: ((docker-hub.password))
+
+jobs:
+  - name: build-image
+    plan:
+      - in_parallel:
+          - get: git
+            trigger: true
+          - get: buildkit
+            trigger: true
+          - get: concourse-buildkit
+      - task: build
+        image: concourse-buildkit
+        file: git/ci/tasks/build.yml
+        privileged: true
+        output_mapping:
+          image: concourse-buildkit
+      - put: concourse-buildkit
+        params:
+          image: concourse-buildkit/image.tar
+          additional_tags: git/.git/short_ref
