@@ -73,7 +73,11 @@ elif [ -n "$CACHE_REGISTRY_REF" ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,ref=${CACHE_REGISTRY_REF}"
 fi
 
-if [ -f cache/index.json ]; then
+if [ -d cache/image.tar ]; then
+    tar xf cache/image.tar -C cache
+fi
+
+if [ -f cache/index.json ] || [ -f cache/manifest.json ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=cache"
 elif [ -n "$CACHE_REGISTRY_REF" ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=registry,ref=${CACHE_REGISTRY_REF}"
