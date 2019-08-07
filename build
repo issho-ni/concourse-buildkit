@@ -52,6 +52,7 @@ sanitize_cgroups
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ", $0}')
 BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
 BUILDCTL_OPTS=${BUILDCTL_OPTS:-}
+CACHE_INPUT_DIR=${CACHE_INPUT_DIR:-}
 CACHE_MODE=${CACHE_MODE:-min}
 CACHE_REGISTRY_REF=${CACHE_REGISTRY_REF:-}
 CONTEXT=${CONTEXT:-.}
@@ -69,17 +70,24 @@ BUILDCTL_OPTS="${BUILDCTL_OPTS} --local dockerfile=${DOCKERFILE}"
 
 if [ -d cache ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_MODE},dest=cache"
-elif [ -n "$CACHE_REGISTRY_REF" ]; then
+
+    if [ -f cache/index.json ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=cache"
+    fi
+fi
+
+if [ -n "$CACHE_INPUT_DIR" ]; then
+    if [ -f ${CACHE_INPUT_DIR}/image.tar ]; then
+        tar xf ${CACHE_INPUT_DIR}/image.tar -C ${CACHE_INPUT_DIR}
+    fi
+
+    if [ -f ${CACHE_INPUT_DIR}/index.json ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=${CACHE_INPUT_DIR}"
+    fi
+fi
+
+if [ -n "$CACHE_REGISTRY_REF" ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,mode=${CACHE_MODE},ref=${CACHE_REGISTRY_REF}"
-fi
-
-if [ -f cache/image.tar ]; then
-    tar xf cache/image.tar -C cache
-fi
-
-if [ -f cache/index.json ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=cache"
-elif [ -n "$CACHE_REGISTRY_REF" ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=registry,ref=${CACHE_REGISTRY_REF}"
 fi
 

@@ -42,6 +42,12 @@ arguments.
 
 _Optional._ Additional arguments to pass to the `buildctl` command.
 
+#### `$CACHE_INPUT_DIR`
+
+_Optional._ Directory passed as an `input` to the task from which to load a
+cache image. If the directory contains an OCI-compliant tarball named
+`image.py`, it will be extracted.
+
 #### `$CACHE_MODE`
 
 _Optional,_ default: `min`. BuildKit cache mode to use, either `min` (only
@@ -92,8 +98,9 @@ There are no required inputs, other than an input containing a `Dockerfile`
 and build context, with the `$CONTEXT` parameter set to the name of the
 input.
 
-If a `cache` input is specified, the contents will be loaded as a build cache
-by BuildKit before attempting to build the image.
+If `$CACHE_INPUT_DIR` is specified and matches the name of an input, its
+contents will be loaded as a build cache by BuildKit before attempting to
+build the image.
 
 ### `outputs`
 
