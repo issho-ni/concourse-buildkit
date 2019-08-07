@@ -52,7 +52,7 @@ sanitize_cgroups
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ", $0}')
 BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
 BUILDCTL_OPTS=${BUILDCTL_OPTS:-}
-CACHE_LOCAL_MODE=${CACHE_LOCAL_MODE:-min}
+CACHE_MODE=${CACHE_MODE:-min}
 CACHE_REGISTRY_REF=${CACHE_REGISTRY_REF:-}
 CONTEXT=${CONTEXT:-.}
 DOCKERFILE=${DOCKERFILE:-$CONTEXT}
@@ -68,9 +68,9 @@ BUILDCTL_OPTS="${BUILDCTL_OPTS} --local context=${CONTEXT}"
 BUILDCTL_OPTS="${BUILDCTL_OPTS} --local dockerfile=${DOCKERFILE}"
 
 if [ -d cache ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_LOCAL_MODE},dest=cache"
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_MODE},dest=cache"
 elif [ -n "$CACHE_REGISTRY_REF" ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,ref=${CACHE_REGISTRY_REF}"
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,mode=${CACHE_MODE},ref=${CACHE_REGISTRY_REF}"
 fi
 
 if [ -d cache/image.tar ]; then

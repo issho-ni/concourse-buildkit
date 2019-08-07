@@ -42,7 +42,7 @@ arguments.
 
 _Optional._ Additional arguments to pass to the `buildctl` command.
 
-#### `$CACHE_LOCAL_MODE`
+#### `$CACHE_MODE`
 
 _Optional,_ default: `min`. BuildKit cache mode to use, either `min` (only
 caches the layers used in the resulting image) or `max` (caches all
