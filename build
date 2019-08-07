@@ -73,7 +73,7 @@ elif [ -n "$CACHE_REGISTRY_REF" ]; then
     BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,mode=${CACHE_MODE},ref=${CACHE_REGISTRY_REF}"
 fi
 
-if [ -d cache/image.tar ]; then
+if [ -f cache/image.tar ]; then
     tar xf cache/image.tar -C cache
 fi
 
