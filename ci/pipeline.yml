@@ -12,7 +12,7 @@ resources:
     source:
       uri: https://github.com/issho-ni/concourse-buildkit
       ignore_paths:
-        - ci/
+        - ci/pipeline.yml
   - name: buildkit
     type: registry-image
     icon: docker
@@ -32,7 +32,7 @@ resources:
     source:
       uri: https://github.com/issho-ni/concourse-buildkit
       paths:
-        - ci/
+        - ci/pipeline.yml
   - name: pipeline
     type: concourse-pipeline
     icon: fan
@@ -52,6 +52,7 @@ groups:
 
 jobs:
   - name: pipeline
+    public: true
     plan:
       - get: pipeline-git
         trigger: true
@@ -62,6 +63,7 @@ jobs:
               team: main
               config_file: pipeline-git/ci/pipeline.yml
   - name: build-image
+    public: true
     plan:
       - in_parallel:
           - get: git
