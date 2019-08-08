@@ -72,6 +72,7 @@ build from.
 
 _Optional,_ default: `docker`. Image output type, defaulting to `docker` for
 use with `docker load` or pushing to Docker Hub or Hub-compatible registries.
+Set to `none` to skip creating an output image.
 
 #### `$TAG`
 
