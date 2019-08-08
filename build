@@ -114,7 +114,7 @@ fi
 
 BUILDCTL_OPTS="${BUILDCTL_OPTS} ${BUILD_ARGS_OPT}"
 
-if [ "$OUTPUT_TYPE" != "none" ]; then
+if [ "$OUTPUT_TYPE" != "none" ] && [ -d image ]; then
     if [ ! -n "$REPOSITORY" ]; then
         echo "required parameter \$REPOSITORY is missing!"
         exit 1
@@ -133,13 +133,7 @@ if [ "$OUTPUT_TYPE" != "none" ]; then
         REPOSITORY="${REPOSITORY}:${TAG}"
     fi
 
-    output="--output type=${OUTPUT_TYPE},name=${REPOSITORY}"
-
-    if [ -d image ]; then
-        output="${output},dest=image/image.tar"
-    fi
+    BUILDCTL_OPTS="${BUILDCTL_OPTS} --output type=${OUTPUT_TYPE},name=${REPOSITORY},dest=image/image.tar"
 fi
-
-BUILDCTL_OPTS="${BUILDCTL_OPTS} ${output}"
 
 exec buildctl-daemonless.sh build ${BUILDCTL_OPTS}
