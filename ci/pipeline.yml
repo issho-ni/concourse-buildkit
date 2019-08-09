@@ -18,7 +18,7 @@ resources:
     icon: docker
     source:
       repository: moby/buildkit
-      tag: v0.6.0
+      tag: master
   - name: concourse-buildkit
     type: registry-image
     icon: docker

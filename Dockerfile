@@ -1,4 +1,4 @@
-FROM moby/buildkit:v0.6.0
+FROM moby/buildkit:master
 USER root
 WORKDIR /root
 COPY build /usr/bin/
