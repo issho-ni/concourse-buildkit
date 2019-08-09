@@ -52,9 +52,13 @@ sanitize_cgroups
 BUILD_ARGS_OPT=$(env | awk '/BUILD_ARG_/ {gsub(/BUILD_ARG_/, "--build-arg "); printf "%s ", $0}')
 BUILD_ARGS_FILE=${BUILD_ARGS_FILE:-}
 BUILDCTL_OPTS=${BUILDCTL_OPTS:-}
-CACHE_INPUT_DIR=${CACHE_INPUT_DIR:-cache}
-CACHE_MODE=${CACHE_MODE:-min}
-CACHE_REGISTRY_REF=${CACHE_REGISTRY_REF:-}
+CACHE_IMPORT_REF=${CACHE_IMPORT_REF:-}
+CACHE_IMPORT_SRC=${CACHE_IMPORT_SRC:-cache}
+CACHE_IMPORT_TYPE=${CACHE_IMPORT_TYPE:-local}
+CACHE_EXPORT_DEST=${CACHE_EXPORT_DEST:-$CACHE_IMPORT_SRC}
+CACHE_EXPORT_MODE=${CACHE_EXPORT_MODE:-min}
+CACHE_EXPORT_REF=${CACHE_EXPORT_REF:-$CACHE_IMPORT_REF}
+CACHE_EXPORT_TYPE=${CACHE_EXPORT_TYPE:-$CACHE_IMPORT_TYPE}
 CONTEXT=${CONTEXT:-.}
 DOCKERFILE=${DOCKERFILE:-$CONTEXT}
 OUTPUT_TYPE=${OUTPUT_TYPE:-docker}
@@ -68,22 +72,39 @@ BUILDCTL_OPTS="${BUILDCTL_OPTS} --frontend dockerfile.v0"
 BUILDCTL_OPTS="${BUILDCTL_OPTS} --local context=${CONTEXT}"
 BUILDCTL_OPTS="${BUILDCTL_OPTS} --local dockerfile=${DOCKERFILE}"
 
-if [ -d cache ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_MODE},dest=cache"
-elif [ -n "$CACHE_REGISTRY_REF" ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,mode=${CACHE_MODE},ref=${CACHE_REGISTRY_REF}"
+if [ "${CACHE_IMPORT_TYPE}" = "local" ]; then
+    if [ -n "${CACHE_IMPORT_SRC}" ] && [ -f "${CACHE_IMPORT_SRC}/index.json" ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=${CACHE_IMPORT_SRC}"
+    fi
+elif [ "$CACHE_IMPORT_TYPE" = "registry" ]; then
+    if [ -n "$CACHE_IMPORT_REF" ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=registry,ref=${CACHE_IMPORT_REF}"
+    else
+        echo "invalid \$CACHE_IMPORT_REF '${CACHE_IMPORT_REF}'!"
+        exit 1
+    fi
+elif [ "$CACHE_IMPORT_TYPE" != "none" ]; then
+    echo "invalid \$CACHE_IMPORT_TYPE '${CACHE_IMPORT_TYPE}'!"
+    exit 1
 fi
 
-if [ -n "$CACHE_INPUT_DIR" ] && [ -d "$CACHE_INPUT_DIR" ]; then
-    if [ -f ${CACHE_INPUT_DIR}/image.tar ]; then
-        tar xf ${CACHE_INPUT_DIR}/image.tar -C ${CACHE_INPUT_DIR}
+if [ ${CACHE_EXPORT_TYPE} = "local" ]; then
+    if [ -n ${CACHE_EXPORT_DEST} ] && [ -d ${CACHE_EXPORT_DEST} ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=local,mode=${CACHE_EXPORT_MODE},dest=${CACHE_EXPORT_DEST}"
+    else
+        echo "invalid \$CACHE_EXPORT_DEST '${CACHE_EXPORT_DEST}'!"
+        exit 1
     fi
-
-    if [ -f ${CACHE_INPUT_DIR}/index.json ]; then
-        BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=local,src=${CACHE_INPUT_DIR}"
+elif [ "${CACHE_EXPORT_TYPE}" = "registry" ]; then
+    if [ -n "$CACHE_EXPORT_REF" ]; then
+        BUILDCTL_OPTS="${BUILDCTL_OPTS} --export-cache type=registry,mode=${CACHE_EXPORT_MODE},ref=${CACHE_EXPORT_REF}"
+    else
+        echo "invalid \$CACHE_EXPORT_REF '${CACHE_EXPORT_REF}'!"
+        exit 1
     fi
-elif [ -n "$CACHE_REGISTRY_REF" ]; then
-    BUILDCTL_OPTS="${BUILDCTL_OPTS} --import-cache type=registry,ref=${CACHE_REGISTRY_REF}"
+elif [ "${CACHE_EXPORT_TYPE}" != "none" ]; then
+    echo "invalid \$CACHE_EXPORT_TYPE '${CACHE_EXPORT_TYPE}'!"
+    exit 1
 fi
 
 if [ -n "$TARGET_FILE" ]; then

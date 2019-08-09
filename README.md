@@ -42,17 +42,44 @@ arguments.
 
 _Optional._ Additional arguments to pass to the `buildctl` command.
 
-#### `$CACHE_INPUT_DIR`
+#### `$CACHE_EXPORT_DEST`
 
-_Optional._ Directory passed as an `input` to the task from which to load a
-cache image. If the directory contains an OCI-compliant tarball named
-`image.py`, it will be extracted.
+_Optional,_ default: value of `$CACHE_IMPORT_SRC`. If `$CACHE_EXPORT_TYPE` is
+`local`, the directory passed to the task's `outputs` or `caches` into which
+to export the build cache.
 
-#### `$CACHE_MODE`
+#### `$CACHE_EXPORT_MODE`
 
 _Optional,_ default: `min`. BuildKit cache mode to use, either `min` (only
 caches the layers used in the resulting image) or `max` (caches all
 intermediate layers).
+
+#### `$CACHE_EXPORT_REF`
+
+_Optional,_ default: value of `$CACHE_IMPORT_REF`. If `$CACHE_EXPORT_TYPE` is
+`registry`, the image ref (e.g. `docker.io/user/repository:tag`) into which
+to push the build cache.
+
+#### `$CACHE_EXPORT_TYPE`
+
+_Optional,_ default: value of `$CACHE_IMPORT_TYPE`. Type of cache export to
+perform: `local`, `registry`, or `none`.
+
+#### `$CACHE_IMPORT_REF`
+
+_Optional._ If `$CACHE_IMPORT_TYPE` is `registry`, the image ref (e.g.
+`docker.io/user/repository:tag`) from which to pull the build cache.
+
+#### `$CACHE_IMPORT_SRC`
+
+_Optional,_ default: `cache`. If `$CACHE_IMPORT_TYPE` is `local`, the
+directory passed to the task's `inputs` or `caches` from which to import the
+build cache.
+
+#### `$CACHE_IMPORT_TYPE`
+
+_Optional,_ default: `local`. Type of cache import to perform: `local`,
+`registry`, or `none`.
 
 #### `$CACHE_REGISTRY_REF`
 
@@ -99,9 +126,8 @@ There are no required inputs, other than an input containing a `Dockerfile`
 and build context, with the `$CONTEXT` parameter set to the name of the
 input.
 
-If `$CACHE_INPUT_DIR` is specified and matches the name of an input, its
-contents will be loaded as a build cache by BuildKit before attempting to
-build the image.
+If `$CACHE_IMPORT_TYPE` is `local` and `$CACHE_IMPORT_SRC` is set to the name
+of one of the inputs, the build cache will be loaded from that input.
 
 ### `outputs`
 
@@ -109,14 +135,16 @@ If an `image` output is specified, the image tarball will be written to
 `image/image.tar`. This tarball can be used with `docker load` or uploaded to
 a registry with [registry-image][].
 
-If a `cache` output is specified, the cache will be written into the `cache`
-directory. A tarball created from the contents of this directory will be an
-OCI-compliant image tarball.
+If `$CACHE_EXPORT_TYPE` is `local` and `$CACHE_EXPORT_DEST` is set to the name
+of one of the `outputs`, the build cache will be saved to that output.
 
 ### `caches`
 
-If a `cache` cache is specified, the build cache will be cached for the job
-on the worker that runs the job.
+If `$CACHE_IMPORT_TYPE` is `local` and `$CACHE_IMPORT_SRC` is set to the name
+of one of the `caches`, the build cache will be loaded from that cache.
+
+If `$CACHE_EXPORT_TYPE` is `local` and `$CACHE_EXPORT_DEST` is set to the name
+of one of the `caches`, the build cache will be saved to that cache.
 
 ### `run`
 
